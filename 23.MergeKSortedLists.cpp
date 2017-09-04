@@ -1,4 +1,5 @@
 //Merge k sorted linked lists and return it as one sorted list. Analyze and describe its complexity.
+//更快的办法：分治 merge
 #include<vector>
 using namespace std;
 
