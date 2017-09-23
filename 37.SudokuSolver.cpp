@@ -1,149 +1,200 @@
 //Why don't work ?
 //-- Only use constrains is not able to solve sudoku problem 
 //example:
-//
+
 //position x must be 3 but the constrain may not get that information
 //so the soduke may use backtrack!
-//
+
 //* * * 3
 //* * * * 3
 //* * x
 //3
 //* 3
-//
-//
-//
 
+// 0ms ansewer:
+/* class Solution {
+	struct cell // encapsulates a single cell on a Sudoku board
+	{
+		uint8_t value; // cell value 1..9 or 0 if unset
+		// number of possible (unconstrained) values for the cell
+		uint8_t numPossibilities;
+		// if bitset[v] is 1 then value can't be v
+		bitset<10> constraints;
+		cell() : value(0), numPossibilities(9),constraints() {};
+	};
+	array<array<cell,9>,9> cells;
 
+	// sets the value of the cell to [v]
+	// the function also propagates constraints to other cells and deduce new values where possible
+	bool set(int i, int j, int v)
+	{
+		// updating state of the cell
+		cell& c = cells[i][j];
+		if (c.value == v)
+			return true;
+		if (c.constraints[v])
+			return false;
+		c.constraints = bitset<10>(0x3FE); // all 1s
+		c.constraints.reset(v);
+		c.numPossibilities = 1;
+		c.value = v;
 
+		// propagating constraints
+		for (int k = 0; k<9; k++) {
+			// to the row:
+			if (i != k && !updateConstraints(k, j, v))
+				return false;
+			// to the column:
+			if (j != k && !updateConstraints(i, k, v))
+				return false;
+			// to the 3x3 square:
+			int ix = (i / 3) * 3 + k / 3;
+			int jx = (j / 3) * 3 + k % 3;
+			if (ix != i && jx != j && !updateConstraints(ix, jx, v))
+				return false;
+		}
+		return true;
+	}
+	// update constraints of the cell i,j by excluding possibility of 'excludedValue'
+	// once there's one possibility left the function recurses back into set()
+	bool updateConstraints(int i, int j, int excludedValue)
+	{
+		cell& c = cells[i][j];
+		if (c.constraints[excludedValue]) {
+			return true;
+		}
+		if (c.value == excludedValue) {
+			return false;
+		}
+		c.constraints.set(excludedValue);
+		if (--c.numPossibilities > 1)
+			return true;
+		for (int v = 1; v <= 9; v++) {
+			if (!c.constraints[v]) {
+				return set(i, j, v);
+			}
+		}
+		assert(false);
+	}
+
+	// backtracking state - list of empty cells
+	vector<pair<int, int>> bt;
+
+	// find values for empty cells
+	bool findValuesForEmptyCells()
+	{
+		// collecting all empty cells
+		bt.clear();
+		for (int i = 0; i < 9; i++) {
+			for (int j = 0; j < 9; j++) {
+				if (!cells[i][j].value)
+					bt.push_back(make_pair(i, j));
+			}
+		}
+		// making backtracking efficient by pre-sorting empty cells by numPossibilities
+		sort(bt.begin(), bt.end(), [this](const pair<int, int>&a, const pair<int, int>&b) {
+			return cells[a.first][a.second].numPossibilities < cells[b.first][b.second].numPossibilities; });
+		return backtrack(0);
+	}
+
+	// Finds value for all empty cells with index >=k
+	bool backtrack(int k)
+	{
+		if (k >= bt.size())
+			return true;
+		int i = bt[k].first;
+		int j = bt[k].second;
+		// fast path - only 1 possibility
+		if (cells[i][j].value)
+			return backtrack(k + 1);
+		auto constraints = cells[i][j].constraints;
+		// slow path >1 possibility.
+		// making snapshot of the state
+		array<array<cell,9>,9> snapshot(cells);
+		for (int v = 1; v <= 9; v++) {
+			if (!constraints[v]) {
+				if (set(i, j, v)) {
+					if (backtrack(k + 1))
+						return true;
+				}
+				// restoring from snapshot,
+				// note: computationally this is cheaper
+				// than alternative implementation with undoing the changes
+				cells = snapshot;
+			}
+		}
+		return false;
+	}
+public:
+	void solveSudoku(vector<vector<char>> &board) {
+		cells = array<array<cell,9>,9>(); // clear array
+		// Decoding input board into the internal cell matrix.
+		// As we do it - constraints are propagated and even additional values are set as we go
+		// (in the case if it is possible to unambiguously deduce them).
+		for (int i = 0; i < 9; i++)
+		{
+			for (int j = 0; j < 9; j++) {
+				if (board[i][j] != '.' && !set(i, j, board[i][j] - '0'))
+					return; // sudoku is either incorrect or unsolvable
+			}
+		}
+		// if we're lucky we've already got a solution,
+		// however, if we have empty cells we need to use backtracking to fill them
+		if (!findValuesForEmptyCells())
+			return; // sudoku is unsolvable
+
+		// copying the solution back to the board
+		for (int i = 0; i < 9; i++)
+		{
+			for (int j = 0; j < 9; j++) {
+				if (cells[i][j].value)
+					board[i][j] = cells[i][j].value + '0';
+			}
+		}
+	}
+};*/
 
 #include<vector>
-#include<string>
-#include<iostream>
 using namespace std;
 
 class Solution {
+
 public:
-    void placen(vector<vector<int>> & con ,int ip,int jp,int n){
-        for(int i=0;i<9;i++)	    con[i][jp]=con[i][jp]|1<<n;
-        for(int j=0;j<9;j++)	    con[ip][j]=con[ip][j]|1<<n;
-        for(int mi=ip/3*3;mi<ip/3*3+3;mi++) {
-            for(int mj=jp/3*3;mj<jp/3*3+3;mj++){
-                con[mi][mj]=con[mi][mj]|1<<n;
-            }
-        }
+    bool isvalid (vector<vector<char>> & b,int i,int j,char t){
+	for(int ii=0;ii<9;ii++){
+	    if(b[ii][j]==t) return false;
+	}
+	for(int jj=0;jj<9;jj++){
+	    if(b[i][jj]==t) return false;
+	}
+
+	for( int ii=i/3*3;ii<i/3*3+3;ii++){
+	    for(int jj=j/3*3;jj<j/3*3+3;jj++){
+		if(b[ii][jj]==t)    return false;
+	    }
+	}
+	return true;
+    }
+    bool solve(vector<vector<char>>& board) {
+	for(int i=0;i<9;i++){
+	    for(int j=0;j<9;j++){
+		if(board[i][j]=='.'){
+		    for(int t=0;t<9;t++){
+			if(isvalid(board,i,j,'1'+t)){
+			    board[i][j]=t+'1';
+			    if(solve(board))  return true;
+			}
+		    }
+		    board[i][j]='.';
+		    return false;
+		}
+	    }
+	}
+	return true;
     }
 
-    int solven( int n){
-        cout<<"solven:"<<(bitset<10>)n<<endl;
-        int p=400;
-        for(int i=1;i<=9;i++){
-            if((n>>i & 1 )==0){
-                if(p==400)  p=i;
-                else	    return -1;
-            }
-        }
-        if(p==400)  return -1;
-        else	return p;
-    }
-
-    void placeNsolve(vector<vector<char>> & b,vector<vector<int>> & con ,int pi,int pj,int n){
-        b[pi][pj]='0'+n;
-        cout<<"placeNsolve"<<endl;
-        for(int i=0;i<9;i++){
-            for(int j=0;j<9;j++){
-                cout<<b[i][j];
-            }
-            cout<<endl;
-        }
-        placen(con,pi,pj,n);
-        int ans;
-        for(int ii=0;ii<9;ii++){
-            if(b[ii][pj]!='.')	continue;
-            cout<<"eval:"<<ii<<" "<<pj<<endl;
-            ans=solven(con[ii][pj]);
-            if(ans!=-1)	{cout<<"find:"<<ii<<" "<<pj<<endl;placeNsolve(b,con,ii,pj,ans);}
-        }
-        for(int jj=0;jj<9;jj++){
-            if(b[pi][jj]!='.')	continue;
-            cout<<"eval:"<<pi<<" "<<jj<<endl;
-            ans=solven(con[pi][jj]);
-            if(ans!=-1)	{cout<<"find:"<<pi<<" "<<jj<<endl; placeNsolve(b,con,pi,jj,ans);}
-        }
-        for(int ii=pi/3*3;ii<pi/3*3+3;ii++){
-            for(int jj=pj/3*3;jj<pj/3*3+3;jj++){
-                if(b[ii][jj]!='.')	continue;
-                if(ii==pi||jj==pj)   continue;
-                else {
-                    cout<<"eval:"<<ii<<" "<<jj<<endl;
-                    ans=solven(con[ii][jj]);
-                    if(ans!=-1) {cout<<"find:"<<ii<<" "<<jj<<endl;placeNsolve(b,con,ii,jj,ans);}
-                }
-            }
-        }
-    }
 
     void solveSudoku(vector<vector<char>>& board) {
-        vector<vector <int>> con ( 9,vector<int> (9,0));
-
-        for(int i=0;i<9;i++){
-            for(int j=0;j<9;j++) {
-                char n = board[i][j];
-                if (n == '.') continue;
-                else placen(con, i, j, n - '0');
-            }
-        }
-        for(int i=0;i<9;i++){
-            for(int j=0;j<9;j++) {
-                cout<<"init con:"<<i<<"  "<<j<<(bitset<10> )con[i][j]<<endl;
-
-            }
-        }
-
-
-        for(int i=0;i<9;i++){
-            for(int j=0;j<9;j++){
-                if(board[i][j]!='.')	continue;
-                int ans=solven(con[i][j]);
-                cout<<"run through i:"<<i<<"j: "<<j<<ans<<endl;
-                if (ans!=-1) placeNsolve(board,con,i,j,ans);
-            }
-        }
-        for(int i=0;i<9;i++){
-            for(int j=0;j<9;j++){
-                cout<<" "<<(bitset<10>)con[i][j];
-            }
-            cout<<endl;
-        }
+	solve(board);
     }
 };
-
-
-
-int main()
-{
-    string ma = "..9748...7.........2.1.9.....7...24..64.1.59..98...3.....863.2.....9...6...2759..";
-    vector<vector<char>> bo(9,vector<char>(9,'0'));
-    for(int i=0;i<9;i++ ){
-        for(int j=0;j<9;j++){
-            bo[i][j]=ma[i*9+j];
-        }
-    }
-    for(int i=0;i<9;i++){
-        for(int j=0;j<9;j++){
-            cout<<bo[i][j];
-        }
-        cout<<endl;
-    }
-
-    Solution s;
-    s.solveSudoku(bo);
-    for(int i=0;i<9;i++){
-        for(int j=0;j<9;j++){
-            cout<<bo[i][j];
-        }
-        cout<<endl;
-    }
-    return 0;
-}
-
