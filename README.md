@@ -14,7 +14,9 @@ except follings:
 
 
 ### 2017.9.24:Intersting problems in second page (51-100) that I'm going to solve:
-    51	N-Queens   			31.40%
+	
+	
+    ~~51	N-Queens   			31.40%~~
 
     57	Insert Interval   		27.90%
     
