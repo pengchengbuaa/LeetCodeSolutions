@@ -31,9 +31,6 @@ class Solution
 
         while (nums[mid] <= nums[mid + 1])
         {
-            // if (s == e - 1)
-            //     return nums[e];
-
             if (nums[mid] >= nums[s])
             {
                 s = mid;
